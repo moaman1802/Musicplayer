@@ -1,19 +1,23 @@
+// App.js
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-// import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LoginComponent from './components/LoginComponent'
-import SongUpload from './components/AdminSongUpload'
 import AdminSongUpload from './components/AdminSongUpload'
+import MusicPlayer from './components/MusicPlayer'
+import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <>
-     <LoginComponent></LoginComponent>
-  {/* <AdminSongUpload></AdminSongUpload> */}
-    </>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginComponent />} />
+        <Route path="/admin" element={<AdminSongUpload />} />
+        <Route path="/music" element={<MusicPlayer />} />
+        <Route path="/" element={<Navigate to="/music" replace />} />
+      </Routes>
+    </Router>
   )
 }
 
