@@ -236,7 +236,7 @@ const MusicPlayer = () => {
   return (
     <div className={`music-player ${isFullscreen ? 'fullscreen' : ''}`}>
       {/* Header with User Profile */}
-      <header className="player-header">
+      <header className="player-header rounded-md">
         <div className="header-content">
             
           <div className="app-brand">

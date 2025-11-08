@@ -261,7 +261,7 @@ const LoginComponent = () => {
                     </div>
 
                     {/* Sample Credentials (Login only) */}
-                    {!isRegister && (
+                    {/* {!isRegister && (
                         <div className="mt-8 p-4 bg-gray-750 rounded-lg border border-gray-600">
                             <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center space-x-2">
                                 <span className="w-1 h-1 bg-cyan-400 rounded-full"></span>
@@ -278,7 +278,7 @@ const LoginComponent = () => {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
         </div>
