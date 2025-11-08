@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import './LoginComponent.css';
+import { useNavigate } from 'react-router-dom';
+import { 
+  FaUser, 
+  FaLock, 
+  FaEnvelope
+} from 'react-icons/fa';
+import { 
+  IoMusicalNotes,
+  IoLogIn,
+  IoPersonAdd
+} from 'react-icons/io5';
 
 const LoginComponent = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [userData, setUserData] = useState(null);
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [songs, setSongs] = useState([]);
-    const [songsLoading, setSongsLoading] = useState(false);
+    const [isRegister, setIsRegister] = useState(false);
     
     const [loginForm, setLoginForm] = useState({
         username: '',
+        password: ''
+    });
+
+    const [registerForm, setRegisterForm] = useState({
+        username: '',
+        email: '',
         password: ''
     });
 
@@ -38,9 +52,10 @@ const LoginComponent = () => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data));
             
-            setUserData(data);
-            setIsLoggedIn(true);
-            fetchSongs(data.token); // Fetch songs after login
+            // Redirect to music player
+            navigate('/music');
+            console.log("loged in");
+            
             
         } catch (err) {
             setError('Invalid username or password');
@@ -49,181 +64,221 @@ const LoginComponent = () => {
         }
     };
 
-    const fetchSongs = async (token) => {
-        setSongsLoading(true);
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        // Basic validation
+        if (registerForm.password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            setLoading(false);
+            return;
+        }
+
+        if (!registerForm.email.includes('@')) {
+            setError('Please enter a valid email address');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch('http://localhost:8080/api/songs', {
-                method: 'GET',
+            const response = await fetch('http://localhost:8080/api/auth/register', {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(registerForm)
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch songs');
+                const errorData = await response.text();
+                throw new Error(errorData || 'Registration failed');
             }
 
-            const songsData = await response.json();
-            setSongs(songsData);
+            // Registration successful, switch to login
+            setError('');
+            setIsRegister(false);
+            setRegisterForm({ username: '', email: '', password: '' });
+            
+            // Show success message
+            setError('Registration successful! Please login with your credentials.');
+            
         } catch (err) {
-            setError('Failed to load songs');
+            setError(err.message || 'Registration failed. Please try again.');
         } finally {
-            setSongsLoading(false);
+            setLoading(false);
         }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsLoggedIn(false);
-        setUserData(null);
-        setSongs([]);
-        setLoginForm({ username: '', password: '' });
     };
 
     const handleInputChange = (e) => {
-        setLoginForm({
-            ...loginForm,
-            [e.target.name]: e.target.value
-        });
+        if (isRegister) {
+            setRegisterForm({
+                ...registerForm,
+                [e.target.name]: e.target.value
+            });
+        } else {
+            setLoginForm({
+                ...loginForm,
+                [e.target.name]: e.target.value
+            });
+        }
     };
 
-    const formatDuration = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const toggleMode = () => {
+        setIsRegister(!isRegister);
+        setError('');
+        setLoginForm({ username: '', password: '' });
+        setRegisterForm({ username: '', email: '', password: '' });
     };
 
-    // Check if user is already logged in on component mount
+    // If user is already logged in, redirect to music
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
-        
-        if (token && user) {
-            setIsLoggedIn(true);
-            setUserData(JSON.parse(user));
-            fetchSongs(token);
+        if (token) {
+            navigate('/music');
         }
-    }, []);
+    }, [navigate]);
 
-    if (isLoggedIn && userData) {
-        return (
-            <div className="user-dashboard">
-                <div className="dashboard-container">
-                    {/* User Info Card */}
-                    <div className="user-card">
-                        <h2>🎵 Welcome to Music Player!</h2>
-                        <div className="user-info">
-                            <div className="info-item">
-                                <strong>Username:</strong> {userData.username}
-                            </div>
-                            <div className="info-item">
-                                <strong>Email:</strong> {userData.email}
-                            </div>
-                            <div className="info-item">
-                                <strong>Role:</strong> <span className={`role ${userData.role.toLowerCase()}`}>
-                                    {userData.role}
-                                </span>
-                            </div>
-                            <div className="info-item">
-                                <strong>User ID:</strong> {userData.id}
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-2xl transform hover:scale-[1.01] transition-all duration-300">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <div className="flex justify-center mb-4">
+                            <div className="p-3 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-xl">
+                                <IoMusicalNotes className="text-3xl text-white" />
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="logout-btn">
-                            Logout
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                            MusicStream Pro
+                        </h2>
+                        <p className="text-gray-400 mt-2">
+                            {isRegister ? 'Create your account' : 'Sign in to your music account'}
+                        </p>
+                    </div>
+
+                    {/* Error/Success Message */}
+                    {error && (
+                        <div className={`mb-6 p-4 ${
+                            error.includes('successful') 
+                                ? 'bg-green-500/10 border border-green-500/30 text-green-400' 
+                                : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                        } rounded-lg text-sm flex items-center space-x-2`}>
+                            <div className={`w-2 h-2 rounded-full ${
+                                error.includes('successful') ? 'bg-green-400' : 'bg-red-400'
+                            }`}></div>
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    {/* Form */}
+                    <form onSubmit={isRegister ? handleRegister : handleLogin} className="space-y-6">
+                        <div className="space-y-4">
+                            {/* Username Field */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <FaUser className="text-gray-500" />
+                                </div>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    value={isRegister ? registerForm.username : loginForm.username}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter your username"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                                    required
+                                />
+                            </div>
+
+                            {/* Email Field (Register only) */}
+                            {isRegister && (
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FaEnvelope className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={registerForm.email}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter your email"
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                                        required
+                                    />
+                                </div>
+                            )}
+                            
+                            {/* Password Field */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <FaLock className="text-gray-500" />
+                                </div>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={isRegister ? registerForm.password : loginForm.password}
+                                    onChange={handleInputChange}
+                                    placeholder={isRegister ? "Create your password" : "Enter your password"}
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                                    required
+                                    minLength={isRegister ? 6 : 1}
+                                />
+                            </div>
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                    <span>{isRegister ? 'Creating Account...' : 'Signing in...'}</span>
+                                </>
+                            ) : (
+                                <>
+                                    {isRegister ? <IoPersonAdd /> : <IoLogIn />}
+                                    <span>{isRegister ? 'Create Account' : 'Sign In to MusicStream'}</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Toggle between Login and Register */}
+                    <div className="mt-6 text-center">
+                        <button
+                            onClick={toggleMode}
+                            className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 text-sm font-medium"
+                        >
+                            {isRegister 
+                                ? 'Already have an account? Sign in' 
+                                : "Don't have an account? Register now"
+                            }
                         </button>
                     </div>
 
-                    {/* Songs List */}
-                    <div className="songs-section">
-                        <div className="songs-header">
-                            <h3>🎶 Available Songs ({songs.length})</h3>
-                            {songsLoading && <div className="loading">Loading songs...</div>}
-                        </div>
-
-                        {!songsLoading && songs.length === 0 && (
-                            <div className="no-songs">No songs available</div>
-                        )}
-
-                        {!songsLoading && songs.length > 0 && (
-                            <div className="songs-list">
-                                {songs.map((song) => (
-                                    <div key={song.id} className="song-card">
-                                        <div className="song-info">
-                                            <div className="song-title">{song.title}</div>
-                                            <div className="song-artist">{song.artist}</div>
-                                            <div className="song-album">{song.album}</div>
-                                            <div className="song-details">
-                                                <span className="duration">
-                                                    ⏱️ {formatDuration(song.durationSeconds)}
-                                                </span>
-                                                <span className="song-id">ID: {song.id}</span>
-                                            </div>
-                                        </div>
-                                        <div className="song-actions">
-                                            <button className="play-btn">
-                                                ▶ Play
-                                            </button>
-                                            <button className="add-btn">
-                                                ➕ Add to Playlist
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                    {/* Sample Credentials (Login only) */}
+                    {!isRegister && (
+                        <div className="mt-8 p-4 bg-gray-750 rounded-lg border border-gray-600">
+                            <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center space-x-2">
+                                <span className="w-1 h-1 bg-cyan-400 rounded-full"></span>
+                                <span>Sample Credentials</span>
+                            </h4>
+                            <div className="space-y-2 text-sm text-gray-400">
+                                <div className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                                    <span className="text-cyan-300">Users:</span>
+                                    <span>john_doe / password123</span>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                                    <span className="text-yellow-300">Admin:</span>
+                                    <span>admin / admin123</span>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="login-container">
-            <div className="login-card">
-                <h2>🎵 Music Player Login</h2>
-                
-                {error && <div className="error-message">{error}</div>}
-                
-                <form onSubmit={handleLogin} className="login-form">
-                    <div className="form-group">
-                        <label>Username:</label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={loginForm.username}
-                            onChange={handleInputChange}
-                            placeholder="Enter username"
-                            required
-                        />
-                    </div>
-                    
-                    <div className="form-group">
-                        <label>Password:</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={loginForm.password}
-                            onChange={handleInputChange}
-                            placeholder="Enter password"
-                            required
-                        />
-                    </div>
-                    
-                    <button 
-                        type="submit" 
-                        className="login-btn"
-                        disabled={loading}
-                    >
-                        {loading ? 'Logging in...' : 'Login'}
-                    </button>
-                </form>
-
-                <div className="sample-credentials">
-                    <h4>Sample Credentials:</h4>
-                    <div><strong>Users:</strong> john_doe / password123</div>
-                    <div><strong>Admin:</strong> admin / admin123</div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

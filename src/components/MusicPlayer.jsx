@@ -11,7 +11,9 @@ import {
   FaExpand,
   FaCompress,
   FaHeart,
-  FaRegHeart
+  FaRegHeart,
+  FaUser,
+  FaSignOutAlt
 } from 'react-icons/fa';
 import { 
   IoShuffle, 
@@ -19,6 +21,7 @@ import {
   IoMusicalNotes 
 } from 'react-icons/io5';
 import './MusicPlayer.css';
+import AdminAccessButton from './AdminAccessButton';
 
 const MusicPlayer = () => {
   const [user, setUser] = useState(null);
@@ -31,9 +34,11 @@ const MusicPlayer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const audioRef = useRef(null);
   const progressBarRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   // Load user from JWT token and fetch songs
   useEffect(() => {
@@ -70,9 +75,23 @@ const MusicPlayer = () => {
     initializePlayer();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const fetchSongs = async (token) => {
     try {
-      const response = await axios.get('http://localhost:8080/api/admin/songs', {
+      const response = await axios.get('http://localhost:8080/api/songs', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -88,6 +107,15 @@ const MusicPlayer = () => {
       setError('Failed to load songs. Please try again.');
       throw error;
     }
+  };
+
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
   };
 
   // Audio event handlers
@@ -210,18 +238,58 @@ const MusicPlayer = () => {
       {/* Header with User Profile */}
       <header className="player-header">
         <div className="header-content">
+            
           <div className="app-brand">
+            
             <IoMusicalNotes className="app-logo" />
             <h1 className="app-title">MusicStream</h1>
           </div>
-          <div className="user-profile">
-            <div className="user-avatar">
-              {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+          
+          {/* User Profile with Dropdown */}
+          <div className="user-profile-container" ref={profileDropdownRef}>
+            <div className="user-profile-trigger" onClick={toggleProfileDropdown}>
+              <div className="user-avatar">
+                {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <span className="username-text">{user?.username}</span>
+              <AdminAccessButton></AdminAccessButton>
             </div>
-            <div className="user-info">
-              <span className="username">{user?.username}</span>
-              <span className="user-email">{user?.email}</span>
-            </div>
+            
+
+            {showProfileDropdown && (
+              <div className="profile-dropdown">
+                <div className="dropdown-header">
+                  <div className="dropdown-avatar">
+                    {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="dropdown-user-info">
+                    <div className="dropdown-username">{user?.username}</div>
+                    <div className="dropdown-email">{user?.email}</div>
+                    <div className="dropdown-role">{user?.role}</div>
+                  </div>
+                </div>
+                
+                <div className="dropdown-divider"></div>
+                
+                <div className="dropdown-section">
+                  <div className="dropdown-item">
+                    <FaUser className="dropdown-icon" />
+                    <span>Profile Settings</span>
+                  </div>
+                  <div className="dropdown-item">
+                    <FaHeart className="dropdown-icon" />
+                    <span>Favorite Songs</span>
+                  </div>
+                </div>
+                
+                <div className="dropdown-divider"></div>
+                
+                <button className="logout-btn" onClick={handleLogout}>
+                  <FaSignOutAlt className="logout-icon" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
