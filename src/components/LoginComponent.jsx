@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaUser, 
-  FaLock, 
-  FaEnvelope
+import {
+    FaUser,
+    FaLock,
+    FaEnvelope
 } from 'react-icons/fa';
-import { 
-  IoMusicalNotes,
-  IoLogIn,
-  IoPersonAdd
+import {
+    IoMusicalNotes,
+    IoLogIn,
+    IoPersonAdd
 } from 'react-icons/io5';
 
 const LoginComponent = () => {
@@ -16,13 +16,14 @@ const LoginComponent = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [isRegister, setIsRegister] = useState(false);
-    
+
     const [loginForm, setLoginForm] = useState({
         username: '',
         password: ''
     });
 
     const [registerForm, setRegisterForm] = useState({
+        name: '',
         username: '',
         email: '',
         password: ''
@@ -47,16 +48,19 @@ const LoginComponent = () => {
             }
 
             const data = await response.json();
-            
+
             // Store token in localStorage
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data));
-            
+            let userData = JSON.parse(localStorage.getItem('user'));
+            console.log(userData);
+
+
             // Redirect to music player
             navigate('/music');
             console.log("loged in");
-            
-            
+
+
         } catch (err) {
             setError('Invalid username or password');
         } finally {
@@ -99,11 +103,11 @@ const LoginComponent = () => {
             // Registration successful, switch to login
             setError('');
             setIsRegister(false);
-            setRegisterForm({ username: '', email: '', password: '' });
-            
+            setRegisterForm({ name: '', username: '', email: '', password: '' });
+
             // Show success message
             setError('Registration successful! Please login with your credentials.');
-            
+
         } catch (err) {
             setError(err.message || 'Registration failed. Please try again.');
         } finally {
@@ -129,7 +133,7 @@ const LoginComponent = () => {
         setIsRegister(!isRegister);
         setError('');
         setLoginForm({ username: '', password: '' });
-        setRegisterForm({ username: '', email: '', password: '' });
+        setRegisterForm({ name: '', username: '', email: '', password: '' });
     };
 
     // If user is already logged in, redirect to music
@@ -161,14 +165,12 @@ const LoginComponent = () => {
 
                     {/* Error/Success Message */}
                     {error && (
-                        <div className={`mb-6 p-4 ${
-                            error.includes('successful') 
-                                ? 'bg-green-500/10 border border-green-500/30 text-green-400' 
+                        <div className={`mb-6 p-4 ${error.includes('successful')
+                                ? 'bg-green-500/10 border border-green-500/30 text-green-400'
                                 : 'bg-red-500/10 border border-red-500/30 text-red-400'
-                        } rounded-lg text-sm flex items-center space-x-2`}>
-                            <div className={`w-2 h-2 rounded-full ${
-                                error.includes('successful') ? 'bg-green-400' : 'bg-red-400'
-                            }`}></div>
+                            } rounded-lg text-sm flex items-center space-x-2`}>
+                            <div className={`w-2 h-2 rounded-full ${error.includes('successful') ? 'bg-green-400' : 'bg-red-400'
+                                }`}></div>
                             <span>{error}</span>
                         </div>
                     )}
@@ -207,9 +209,36 @@ const LoginComponent = () => {
                                         className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                                         required
                                     />
+
                                 </div>
+
+
+
                             )}
-                            
+
+
+                            {isRegister && (
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FaUser className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={registerForm.name}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter your name"
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                                        required
+                                    />
+
+                                </div>
+
+
+
+                            )}
+
+
                             {/* Password Field */}
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -227,9 +256,9 @@ const LoginComponent = () => {
                                 />
                             </div>
                         </div>
-                        
-                        <button 
-                            type="submit" 
+
+                        <button
+                            type="submit"
                             disabled={loading}
                             className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
                         >
@@ -253,32 +282,14 @@ const LoginComponent = () => {
                             onClick={toggleMode}
                             className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 text-sm font-medium"
                         >
-                            {isRegister 
-                                ? 'Already have an account? Sign in' 
+                            {isRegister
+                                ? 'Already have an account? Sign in'
                                 : "Don't have an account? Register now"
                             }
                         </button>
                     </div>
 
-                    {/* Sample Credentials (Login only) */}
-                    {/* {!isRegister && (
-                        <div className="mt-8 p-4 bg-gray-750 rounded-lg border border-gray-600">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center space-x-2">
-                                <span className="w-1 h-1 bg-cyan-400 rounded-full"></span>
-                                <span>Sample Credentials</span>
-                            </h4>
-                            <div className="space-y-2 text-sm text-gray-400">
-                                <div className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                                    <span className="text-cyan-300">Users:</span>
-                                    <span>john_doe / password123</span>
-                                </div>
-                                <div className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                                    <span className="text-yellow-300">Admin:</span>
-                                    <span>admin / admin123</span>
-                                </div>
-                            </div>
-                        </div>
-                    )} */}
+
                 </div>
             </div>
         </div>

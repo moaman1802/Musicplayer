@@ -53,10 +53,13 @@ const MusicPlayer = () => {
       try {
         // Decode JWT token to get user info
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log(payload);
+        let userData = JSON.parse(localStorage.getItem('user'));
         setUser({
-          username: payload.username,
-          email: payload.email,
-          role: payload.role
+          username: userData.username,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role
         });
 
         // Fetch songs from backend
@@ -188,7 +191,7 @@ const MusicPlayer = () => {
     setTimeout(() => {
       audioRef.current?.play().catch(error => {
         console.error('Error playing song:', error);
-        // setError('Error playing audio file');
+        setError('Error playing audio file');
         setIsPlaying(false);
       });
     }, 0);
@@ -249,10 +252,10 @@ const MusicPlayer = () => {
           <div className="user-profile-container" ref={profileDropdownRef}>
             <div className="user-profile-trigger" onClick={toggleProfileDropdown}>
               <div className="user-avatar">
-                {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
-              <span className="username-text">{user?.username}</span>
-              <AdminAccessButton></AdminAccessButton>
+              <span className="username-text">{user?.name}</span>
+              {/* <AdminAccessButton></AdminAccessButton> */}
             </div>
             
 
@@ -262,7 +265,7 @@ const MusicPlayer = () => {
                   <div className="dropdown-avatar">
                     {user?.username?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
-                  <div className="dropdown-user-info">
+                  <div className="dropdown-user-info text-left">
                     <div className="dropdown-username">{user?.username}</div>
                     <div className="dropdown-email">{user?.email}</div>
                     <div className="dropdown-role">{user?.role}</div>

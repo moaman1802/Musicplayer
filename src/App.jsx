@@ -5,19 +5,25 @@ import LoginComponent from './components/LoginComponent'
 import AdminSongUpload from './components/AdminSongUpload'
 import MusicPlayer from './components/MusicPlayer'
 import './App.css'
+import Test from './components/HomePage'
+import HomePage from './components/HomePage'
 
 function App() {
   const [count, setCount] = useState(0)
 
-  return (
+  return ( <>
     <Router>
       <Routes>
+        <Route path="/" element={<HomePage/>} />
         <Route path="/login" element={<LoginComponent />} />
         <Route path="/admin" element={<AdminSongUpload />} />
         <Route path="/music" element={<MusicPlayer />} />
-        <Route path="/" element={<Navigate to="/music" replace />} />
+        {/* <Route path="/" element={<Navigate to="/music" replace />} /> */}
+        
       </Routes>
     </Router>
+
+    </>
   )
 }
 
