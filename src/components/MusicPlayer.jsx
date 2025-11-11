@@ -44,7 +44,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     const initializePlayer = async () => {
       const token = localStorage.getItem('token');
-     const REACT_APP_BASE_URL ="http://localhost:8080";
+     const REACT_APP_BASE_URL ="https://musicplayer-rc7u.onrender.com";
       
       if (!token) {
         window.location.href = '/login';
@@ -95,7 +95,7 @@ const MusicPlayer = () => {
 
   const fetchSongs = async (token) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/songs`, {
+      const response = await axios.get(`https://musicplayer-rc7u.onrender.com/api/songs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
