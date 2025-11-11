@@ -17,7 +17,7 @@ export default function AdminSongUpload() {
   const [loading, setLoading] = useState(false);
 
   // 🔹 Backend base URL (change if needed)
-  const BASE_URL = "http://localhost:8080/api";
+  const BASE_URL = "https://musicplayer-rc7u.onrender.com";
 
   // ---------------------------
   // 🔐 LOGIN HANDLER (JWT)
@@ -32,7 +32,7 @@ export default function AdminSongUpload() {
     try {
       setLoading(true);
       // Backend login API (Assuming /api/auth/login returns token)
-      const res = await axios.post(`${BASE_URL}/auth/login`, loginData);
+      const res = await axios.post(`https://musicplayer-rc7u.onrender.com/auth/login`, loginData);
       const jwtToken = res.data.token;
       setToken(jwtToken);
       setLoggedIn(true);
@@ -66,7 +66,7 @@ export default function AdminSongUpload() {
     try {
       setLoading(true);
       // ✅ Use your AdminController upload endpoint
-      const res = await axios.post(`${BASE_URL}/admin/upload`, formData, {
+      const res = await axios.post(`https://musicplayer-rc7u.onrender.com/admin/upload`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -99,7 +99,7 @@ export default function AdminSongUpload() {
   // ---------------------------
   const fetchSongs = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/admin/songs`, {
+      const res = await axios.get(`https://musicplayer-rc7u.onrender.com/admin/songs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("All Songs:", res.data);

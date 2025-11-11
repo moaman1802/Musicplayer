@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
     FaUser,
     FaLock,
-    FaEnvelope
+    FaEnvelope,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 import {
     IoMusicalNotes,
@@ -22,12 +24,46 @@ const LoginComponent = () => {
         password: ''
     });
 
+    const API_BASE_URL = "http://localhost:8080";
+
     const [registerForm, setRegisterForm] = useState({
-        name: '',
         username: '',
         email: '',
         password: ''
     });
+
+    // Create axios instance with base configuration
+    const api = axios.create({
+        baseURL: API_BASE_URL,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        timeout: 10000, // 10 seconds timeout
+    });
+
+    // Add response interceptor for error handling
+    useEffect(() => {
+        const responseInterceptor = api.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                console.error('API Error:', error);
+                
+                if (error.code === 'ECONNABORTED') {
+                    throw new Error('Request timeout. Please check your internet connection.');
+                }
+                
+                if (!error.response) {
+                    throw new Error('Network error. Please check your connection.');
+                }
+                
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            api.interceptors.response.eject(responseInterceptor);
+        };
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -35,34 +71,56 @@ const LoginComponent = () => {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8080/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(loginForm)
-            });
-
-            if (!response.ok) {
-                throw new Error('Login failed');
+            // Basic validation
+            if (!loginForm.username.trim() || !loginForm.password.trim()) {
+                throw new Error('Please fill in all fields');
             }
 
-            const data = await response.json();
+            const response = await api.post('/api/auth/login', loginForm);
+            const data = response.data;
 
-            // Store token in localStorage
+            // Store token and user data
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data));
-            let userData = JSON.parse(localStorage.getItem('user'));
-            console.log(userData);
-
-
+            
+            console.log('Login successful:', data);
+            
             // Redirect to music player
             navigate('/music');
-            console.log("loged in");
-
 
         } catch (err) {
-            setError('Invalid username or password');
+            console.error('Login error:', err);
+            
+            let errorMessage = 'Login failed. Please try again.';
+            
+            if (err.response) {
+                // Server responded with error status
+                const status = err.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = 'Invalid request. Please check your input.';
+                        break;
+                    case 401:
+                        errorMessage = 'Invalid username or password.';
+                        break;
+                    case 404:
+                        errorMessage = 'Login service unavailable.';
+                        break;
+                    case 500:
+                        errorMessage = 'Server error. Please try again later.';
+                        break;
+                    default:
+                        errorMessage = err.response.data?.message || `Login failed (${status})`;
+                }
+            } else if (err.request) {
+                // Request was made but no response received
+                errorMessage = 'Unable to connect to server. Please check your internet connection.';
+            } else {
+                // Something else happened
+                errorMessage = err.message || 'An unexpected error occurred.';
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -73,59 +131,90 @@ const LoginComponent = () => {
         setLoading(true);
         setError('');
 
-        // Basic validation
-        if (registerForm.password.length < 6) {
-            setError('Password must be at least 6 characters long');
-            setLoading(false);
-            return;
-        }
-
-        if (!registerForm.email.includes('@')) {
-            setError('Please enter a valid email address');
-            setLoading(false);
-            return;
-        }
-
         try {
-            const response = await fetch('http://localhost:8080/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(registerForm)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(errorData || 'Registration failed');
+            // Enhanced validation
+            if (!registerForm.username.trim() || !registerForm.email.trim() || !registerForm.password.trim()) {
+                throw new Error('Please fill in all fields');
             }
 
-            // Registration successful, switch to login
+            if (registerForm.username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            if (registerForm.password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(registerForm.email)) {
+                throw new Error('Please enter a valid email address');
+            }
+
+            const response = await api.post('/api/auth/register', registerForm);
+            
+            console.log('Registration successful:', response.data);
+            
+            // Registration successful
             setError('');
             setIsRegister(false);
-            setRegisterForm({ name: '', username: '', email: '', password: '' });
+            setRegisterForm({ username: '', email: '', password: '' });
 
             // Show success message
             setError('Registration successful! Please login with your credentials.');
 
         } catch (err) {
-            setError(err.message || 'Registration failed. Please try again.');
+            console.error('Registration error:', err);
+            
+            let errorMessage = 'Registration failed. Please try again.';
+            
+            if (err.response) {
+                const status = err.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = err.response.data?.message || 'Invalid registration data.';
+                        break;
+                    case 409:
+                        errorMessage = 'Username or email already exists.';
+                        break;
+                    case 422:
+                        errorMessage = 'Validation failed. Please check your input.';
+                        break;
+                    case 500:
+                        errorMessage = 'Server error. Please try again later.';
+                        break;
+                    default:
+                        errorMessage = err.response.data?.message || `Registration failed (${status})`;
+                }
+            } else if (err.request) {
+                errorMessage = 'Unable to connect to server. Please check your internet connection.';
+            } else {
+                errorMessage = err.message || 'An unexpected error occurred.';
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        
         if (isRegister) {
-            setRegisterForm({
-                ...registerForm,
-                [e.target.name]: e.target.value
-            });
+            setRegisterForm(prev => ({
+                ...prev,
+                [name]: value
+            }));
         } else {
-            setLoginForm({
-                ...loginForm,
-                [e.target.name]: e.target.value
-            });
+            setLoginForm(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+        
+        // Clear error when user starts typing
+        if (error) {
+            setError('');
         }
     };
 
@@ -133,7 +222,7 @@ const LoginComponent = () => {
         setIsRegister(!isRegister);
         setError('');
         setLoginForm({ username: '', password: '' });
-        setRegisterForm({ name: '', username: '', email: '', password: '' });
+        setRegisterForm({ username: '', email: '', password: '' });
     };
 
     // If user is already logged in, redirect to music
@@ -168,9 +257,8 @@ const LoginComponent = () => {
                         <div className={`mb-6 p-4 ${error.includes('successful')
                                 ? 'bg-green-500/10 border border-green-500/30 text-green-400'
                                 : 'bg-red-500/10 border border-red-500/30 text-red-400'
-                            } rounded-lg text-sm flex items-center space-x-2`}>
-                            <div className={`w-2 h-2 rounded-full ${error.includes('successful') ? 'bg-green-400' : 'bg-red-400'
-                                }`}></div>
+                            } rounded-lg text-sm flex items-start space-x-3`}>
+                            <FaExclamationTriangle className={`mt-0.5 flex-shrink-0 ${error.includes('successful') ? 'text-green-400' : 'text-red-400'}`} />
                             <span>{error}</span>
                         </div>
                     )}
@@ -191,6 +279,7 @@ const LoginComponent = () => {
                                     placeholder="Enter your username"
                                     className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                                     required
+                                    disabled={loading}
                                 />
                             </div>
 
@@ -208,36 +297,10 @@ const LoginComponent = () => {
                                         placeholder="Enter your email"
                                         className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                                         required
+                                        disabled={loading}
                                     />
-
                                 </div>
-
-
-
                             )}
-
-
-                            {isRegister && (
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FaUser className="text-gray-500" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={registerForm.name}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter your name"
-                                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                                        required
-                                    />
-
-                                </div>
-
-
-
-                            )}
-
 
                             {/* Password Field */}
                             <div className="relative">
@@ -249,10 +312,11 @@ const LoginComponent = () => {
                                     name="password"
                                     value={isRegister ? registerForm.password : loginForm.password}
                                     onChange={handleInputChange}
-                                    placeholder={isRegister ? "Create your password" : "Enter your password"}
+                                    placeholder={isRegister ? "Create your password (min. 6 characters)" : "Enter your password"}
                                     className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                                     required
                                     minLength={isRegister ? 6 : 1}
+                                    disabled={loading}
                                 />
                             </div>
                         </div>
@@ -269,7 +333,7 @@ const LoginComponent = () => {
                                 </>
                             ) : (
                                 <>
-                                    {isRegister ? <IoPersonAdd /> : <IoLogIn />}
+                                    {isRegister ? <IoPersonAdd className="text-lg" /> : <IoLogIn className="text-lg" />}
                                     <span>{isRegister ? 'Create Account' : 'Sign In to MusicStream'}</span>
                                 </>
                             )}
@@ -280,7 +344,8 @@ const LoginComponent = () => {
                     <div className="mt-6 text-center">
                         <button
                             onClick={toggleMode}
-                            className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 text-sm font-medium"
+                            disabled={loading}
+                            className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isRegister
                                 ? 'Already have an account? Sign in'
@@ -288,8 +353,6 @@ const LoginComponent = () => {
                             }
                         </button>
                     </div>
-
-
                 </div>
             </div>
         </div>

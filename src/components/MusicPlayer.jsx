@@ -44,6 +44,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     const initializePlayer = async () => {
       const token = localStorage.getItem('token');
+     const REACT_APP_BASE_URL ="http://localhost:8080";
       
       if (!token) {
         window.location.href = '/login';
@@ -94,12 +95,12 @@ const MusicPlayer = () => {
 
   const fetchSongs = async (token) => {
     try {
-      const response = await axios.get('http://localhost:8080/api/songs', {
+      const response = await axios.get(`http://localhost:8080/api/songs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      });
+      });     
       
       setSongs(response.data);
       if (response.data.length > 0) {
@@ -131,7 +132,7 @@ const MusicPlayer = () => {
       } else {
         audioRef.current.play().catch(error => {
           console.error('Error playing audio:', error);
-        //   setError('Error playing audio file');
+          setError('Error playing audio file');
         });
       }
       setIsPlaying(!isPlaying);

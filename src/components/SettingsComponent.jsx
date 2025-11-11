@@ -39,7 +39,7 @@ const SettingsComponent = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const BASE_URL = 'http://localhost:8080/api';
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
 
   // Load user data on component mount
   useEffect(() => {
