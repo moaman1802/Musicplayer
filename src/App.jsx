@@ -7,6 +7,7 @@ import MusicPlayer from './components/MusicPlayer'
 import './App.css'
 import Test from './components/HomePage'
 import HomePage from './components/HomePage'
+import AdminPanel from './components/admin/AdminPanel'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -16,7 +17,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage/>} />
         <Route path="/login" element={<LoginComponent />} />
-        <Route path="/admin" element={<AdminSongUpload />} />
+        <Route path="/admin" element={<AdminPanel />} />
         <Route path="/music" element={<MusicPlayer />} />
         {/* <Route path="/" element={<Navigate to="/music" replace />} /> */}
         
